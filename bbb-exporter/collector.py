@@ -121,6 +121,15 @@ class BigBlueButtonCollector:
         metric.add_metric([], no_participants)
         return metric
 
+    def metric_meetings_attendee_list(self, meetings):
+        attendee_list = _get_participant_list_by_meeting(meetings)
+        metric = GaugeMetricFamily('bbb_meetings_attendee_list',
+                                   "List of participants in all BigBlueButton meetings",
+                                   labels=["Attendees"])
+        for client, num in attendee_list.items():
+            metric.add_metric([client.lower()], num)
+        return metric
+
     def metric_meetings_listeners(self, meetings):
         no_listeners = reduce(lambda total, meeting: total + int(meeting['listenerCount']), meetings, 0)
         metric = GaugeMetricFamily('bbb_meetings_listeners',
@@ -129,7 +138,8 @@ class BigBlueButtonCollector:
         return metric
 
     def metric_meetings_voice_participants(self, meetings):
-        no_voice_participants = reduce(lambda total, meeting: total + int(meeting['voiceParticipantCount']), meetings, 0)
+        no_voice_participants = reduce(lambda total, meeting: total + int(meeting['voiceParticipantCount']), meetings,
+                                       0)
         metric = GaugeMetricFamily('bbb_meetings_voice_participants',
                                    "Total number of voice participants in all BigBlueButton meetings")
         metric.add_metric([], no_voice_participants)
@@ -154,7 +164,8 @@ class BigBlueButtonCollector:
 
     def metric_recordings_processing(self, bbb_api_latency_metric):
         logging.debug("Requesting via API recordings processing data")
-        histogram = GaugeMetricFamily('bbb_recordings_processing', "Total number of BigBlueButton recordings processing")
+        histogram = GaugeMetricFamily('bbb_recordings_processing',
+                                      "Total number of BigBlueButton recordings processing")
         recording_processing_data, recording_processing_latency = execution_duration(api.get_recordings)("processing")
         histogram.add_metric([], len(recording_processing_data))
         self.histogram_data_recording_processing_latency.add(recording_processing_latency)
@@ -178,7 +189,8 @@ class BigBlueButtonCollector:
     def metric_recordings_unpublished(self, bbb_api_latency_metric):
         logging.debug("Requesting via API recordings unpublished data")
         metric = GaugeMetricFamily('bbb_recordings_unpublished', "Total number of BigBlueButton recordings unpublished")
-        recording_unpublished_data, recording_unpublished_latency = execution_duration(api.get_recordings)("unpublished")
+        recording_unpublished_data, recording_unpublished_latency = execution_duration(api.get_recordings)(
+            "unpublished")
         metric.add_metric([], len(recording_unpublished_data))
         self.histogram_data_recording_unpublished_latency.add(recording_unpublished_latency)
         bbb_api_latency_metric.add_metric(["getRecordings", "state=unpublished"],
@@ -283,6 +295,22 @@ class BigBlueButtonCollector:
                 p_by_c[attendee['clientType']] += 1
 
         return p_by_c
+
+
+def _get_participant_list_by_meeting(self, meetings):
+    att_name = str()
+    for meeting in meetings:
+        if not meeting.get("attendees"):
+            continue
+        if isinstance(meeting['attendees']['attendee'], list):
+            attendees = meeting['attendees']['attendee']
+        else:
+            attendees = [meeting['attendees']['attendee']]
+
+        for attendee in attendees:
+            att_name = [attendee['fullName']]
+
+    return att_name
 
 
 def recordings_processing_from_disk(bigbluebutton_base_dir) -> int:
